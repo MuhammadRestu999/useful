@@ -92,7 +92,6 @@ function parseRegex(...args) {
 
 function genHTML(wn = "(Name)", js, css, cnt) {
 	let out = "";
-	if(cnt) {
 		out += "<!DOCTYPE html>" +
 		"\n<html>" +
 		"\n  <head>" +
@@ -103,23 +102,10 @@ function genHTML(wn = "(Name)", js, css, cnt) {
 		"\n  <body>" +
 		"\n    <h1>" + wn + "</h1>" +
 		"\n    <hr>" +
-		"\n    " + cnt +
+		(cnt ? "\n    " + (cnt.split(`
+`).join("\n    ")) : "") +
 		"\n  </body>" +
 		"\n</html>";
-	} else {
-		out += "<!DOCTYPE html>" +
-		"\n<html>" +
-		"\n  <head>" +
-		(js ? "\n    <script src=\"" + js + "\"></script>" : "") +
-		(css ? "\n    <link rel=\"stylesheet\" href=\"" + css + "\">" : "") +
-		"\n    <title>" + wn + "</title>" +
-		"\n  </head>" +
-		"\n  <body>" +
-		"\n    <h1>" + wn + "</h1>" +
-		"\n    <hr>" +
-		"\n  </body>" +
-		"\n</html>";
-	}
 	return out;
 }
 
@@ -142,3 +128,99 @@ function hk(digit = 4) {
 	return !((out.length != 2) && (out.length != 4) && (out.length != 6)) ? out : hk(digit);
 }
 
+function chck(code) {
+	code = (code || ";").split(`
+`);
+	for(let i of code) {
+		if(!i.endsWith(";") && !i.endsWith("}") && !i.endsWith(")") && !i.endsWith("{") && !i.endsWith("(") && !i.endsWith("`")) {
+			return "Error in:\n\n" + i;
+		}
+	}
+	return "Nothing";
+}
+
+function levenshtein(value, other, insensitive) {
+	let length;
+	let lengthOther;
+	let code;
+	let result;
+	let distance;
+	let distanceOther;
+	let index;
+	let indexOther;
+	let codes = {};
+	let cache = {};
+
+	if (value === other) {
+		return 0;
+	}
+
+	length = value.length;
+	lengthOther = other.length;
+
+	if (length === 0) {
+		return lengthOther;
+	}
+
+	if (lengthOther === 0) {
+		return length;
+	}
+
+	if (insensitive) {
+		value = value.toLowerCase();
+		other = other.toLowerCase();
+	}
+
+	index = 0;
+
+	while (index < length) {
+		codes[index] = value.charCodeAt(index);
+		cache[index] = ++index;
+	}
+
+	indexOther = 0;
+
+	while (indexOther < lengthOther) {
+		code = other.charCodeAt(indexOther);
+		result = distance = indexOther++;
+		index = -1;
+
+		while (++index < length) {
+			distanceOther = code === codes[index] ? distance : distance + 1;
+			distance = cache[index];
+			cache[index] = result =
+				distance > result
+					? distanceOther > result
+						? result + 1
+						: distanceOther
+					: distanceOther > distance
+					? distance + 1
+					: distanceOther;
+		}
+	}
+
+	return result;
+}
+
+function similarity(a, b, insensitive = false) {
+	let left = a || '';
+	let right = b || '';
+	//let insensitive = !(options || {}).sensitive;
+	let longest = Math.max(left.length, right.length);
+
+	return longest === 0 ? 1 : (longest - levenshtein(left, right, !insensitive)) / longest;
+}
+
+function User(fullname, yob, soulmate) {
+	yob = (yob || "9999-99-99").split("-");
+	if(!fullname || !fullname.length > 0) return console.log("Full Name?");
+	if((yob && yob[0] === "9999") || (yob && yob.length < 3) || !(yob)) return console.log("Year Of Birth? (2000-05-13)");
+	
+	let name = (fullname.startsWith("Muhammad") ? fullname.split(" ")[1] : fullname.split(" ")[0])
+	
+	this.fname = fullname;
+	this.name = name;
+	this.yob = yob;
+	this.age = getAge(yob.join("-"));
+	((this.smate = soulmate) || "");
+}
